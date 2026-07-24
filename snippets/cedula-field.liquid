@@ -1,0 +1,132 @@
+{%- comment -%}
+  @snippet cedula-field
+  Renders the national ID (cédula) field shown in the cart before checkout.
+  Validated client-side by the <cedula-validator> web component (10 digits).
+  The validated value is carried to checkout as the `Cedula` cart attribute.
+
+  No parameters. Reads the current value from cart.attributes['Cedula'] so it
+  survives cart drawer / cart page re-renders (Section Rendering API) and reloads.
+{%- endcomment -%}
+
+<script
+  type="module"
+  src="{{ 'cedula-validator.js' | asset_url }}"
+  fetchpriority="low"
+></script>
+
+<cedula-validator
+  class="cedula-field"
+  data-cart-update-url="{{ routes.cart_update_url }}"
+>
+  <label
+    for="cart-cedula"
+    class="cedula-field__label cart-primary-typography"
+  >
+    {{ 'content.cedula_label' | t }}
+  </label>
+
+  <input
+    id="cart-cedula"
+    class="cedula-field__input"
+    type="text"
+    inputmode="numeric"
+    autocomplete="off"
+    maxlength="10"
+    placeholder="{{ 'content.cedula_placeholder' | t }}"
+    value="{{ cart.attributes['Cedula'] | escape }}"
+    aria-describedby="cart-cedula-error"
+    aria-invalid="false"
+    data-cedula-input
+    data-skip-node-update
+  >
+
+  <input
+    type="hidden"
+    name="attributes[Cedula]"
+    form="cart-form"
+    value="{{ cart.attributes['Cedula'] | escape }}"
+    data-cedula-attribute
+  >
+
+  <div
+    id="cart-cedula-error"
+    class="cedula-field__error"
+    role="alert"
+    data-cedula-error
+    {% if cart.attributes['Cedula'] == blank or cart.attributes['Cedula'].size == 10 %}hidden{% endif %}
+  >
+    <span class="svg-wrapper">
+      {{- 'icon-error.svg' | inline_asset_content -}}
+    </span>
+    <small class="cedula-field__error-text cart-primary-typography">
+      {{ 'content.cedula_error' | t }}
+    </small>
+  </div>
+</cedula-validator>
+
+{% stylesheet %}
+  .cedula-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-2xs);
+    width: 100%;
+  }
+
+  .cedula-field__label {
+    font-size: var(--font-size--2xs);
+    font-weight: 500;
+  }
+
+  .cedula-field__input {
+    color: var(--color-input-text);
+    background-color: var(--color-input-background);
+    border-width: var(--style-border-width-inputs);
+    border-color: var(--color-input-border);
+    border-style: solid;
+    border-radius: var(--style-border-radius-inputs);
+    padding: var(--padding-sm) var(--padding-md);
+    font-size: var(--font-size--sm);
+    box-shadow: var(--input-box-shadow);
+    transition: box-shadow var(--animation-speed) ease;
+  }
+
+  .cedula-field__input::placeholder {
+    color: rgb(var(--color-input-text-rgb) / var(--opacity-subdued-text));
+  }
+
+  .cedula-field__input[aria-invalid='true'] {
+    border-color: var(--color-error);
+  }
+
+  .cedula-field__error {
+    display: flex;
+    align-items: center;
+    gap: var(--gap-2xs);
+    color: var(--color-error);
+  }
+
+  .cedula-field__error[hidden] {
+    display: none;
+  }
+
+  .cedula-field__error .svg-wrapper {
+    flex-shrink: 0;
+    width: var(--icon-size-xs);
+    height: var(--icon-size-xs);
+  }
+
+  .cedula-field__error-text {
+    font-size: var(--font-size--2xs);
+  }
+
+  /* Checkout button: dimmed while the cédula is invalid, but still clickable so
+     clicking it surfaces the inline error instead of doing nothing. */
+  .cart__checkout-button--pending {
+    opacity: 0.5;
+  }
+
+  .additional-checkout-buttons--blocked {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+{% endstylesheet %}
