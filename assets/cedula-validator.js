@@ -37,20 +37,19 @@ class CedulaValidator extends HTMLElement {
     this.errorEl = this.querySelector('[data-cedula-error]');
     this.updateUrl = this.dataset.cartUpdateUrl;
 
-    if (!this.input) return;
+    this.scope = this.closest('cart-items-component') || document;
 
-    const scope = this.closest('cart-items-component') || document;
-    this.checkoutButton = scope.querySelector('button[name="checkout"]');
-    this.acceleratedButtons = scope.querySelector('.additional-checkout-buttons');
+    if (!this.input) return;
 
     this.input.addEventListener('input', this.handleInput);
     this.input.addEventListener('blur', this.handleBlur);
-    if (this.checkoutButton) {
-      this.checkoutButton.addEventListener('click', this.handleCheckoutClick, true);
-    }
+    // Delegate checkout clicks: the button renders after us and may be replaced
+    // by a later cart morph, so we cannot rely on a cached reference.
+    document.addEventListener('click', this.handleCheckoutClick, true);
 
-    // Set the initial button state from the prefilled value without flashing an error.
-    this.syncState({ showError: false });
+    // Defer the initial state until the full cart subtree (checkout button) is
+    // present after a Section Rendering API morph on the first add-to-cart.
+    requestAnimationFrame(() => this.syncState({ showError: false }));
   }
 
   disconnectedCallback() {
@@ -58,10 +57,16 @@ class CedulaValidator extends HTMLElement {
       this.input.removeEventListener('input', this.handleInput);
       this.input.removeEventListener('blur', this.handleBlur);
     }
-    if (this.checkoutButton) {
-      this.checkoutButton.removeEventListener('click', this.handleCheckoutClick, true);
-    }
+    document.removeEventListener('click', this.handleCheckoutClick, true);
     clearTimeout(this.persistTimer);
+  }
+
+  get checkoutButton() {
+    return (this.scope || document).querySelector('button[name="checkout"]');
+  }
+
+  get acceleratedButtons() {
+    return (this.scope || document).querySelector('.additional-checkout-buttons');
   }
 
   get value() {
@@ -88,7 +93,12 @@ class CedulaValidator extends HTMLElement {
   }
 
   handleCheckoutClick(event) {
+    const button = event.target.closest?.('button[name="checkout"]');
+    if (!button) return;
+    // Only guard the checkout button that belongs to our cart scope.
+    if (this.scope !== document && !this.scope.contains(button)) return;
     if (this.isValid) return;
+
     event.preventDefault();
     event.stopPropagation();
     this.syncState({ showError: true });

@@ -8,12 +8,6 @@
   survives cart drawer / cart page re-renders (Section Rendering API) and reloads.
 {%- endcomment -%}
 
-<script
-  type="module"
-  src="{{ 'cedula-validator.js' | asset_url }}"
-  fetchpriority="low"
-></script>
-
 <cedula-validator
   class="cedula-field"
   data-cart-update-url="{{ routes.cart_update_url }}"
